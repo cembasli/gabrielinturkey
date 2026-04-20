@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Albert Gabriel Travels, 1927–1932</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #f4f1ea;
+      color: #1f1f1f;
+    }
+    .wrap {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 20px 20px 10px 20px;
+    }
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 30px;
+      line-height: 1.2;
+    }
+    .subtitle {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      color: #444;
+    }
+    .legend-block {
+      background: rgba(255,255,255,0.94);
+      border: 1px solid #d8d1c4;
+      box-shadow: 0 3px 18px rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .route-line {
+      margin: 6px 0;
+      font-size: 16px;
+      line-height: 1.45;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      margin-right: 2px;
+      vertical-align: -1px;
+      border: 1px solid rgba(0,0,0,0.25);
+      flex: 0 0 auto;
+    }
+    #map-wrap {
+      position: relative;
+      max-width: 1380px;
+      margin: 0 auto;
+    }
+    #map {
+      height: 820px;
+      border-top: 1px solid #d8d1c4;
+      border-bottom: 1px solid #d8d1c4;
+    }
+    .toggle-panel {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 1000;
+      width: 280px;
+      max-height: calc(100% - 36px);
+      overflow: auto;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #d8d1c4;
+      border-radius: 12px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.14);
+      padding: 14px 14px 10px 14px;
+      backdrop-filter: blur(2px);
+    }
+    .toggle-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .toggle-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .toggle-item input {
+      margin-top: 2px;
+      transform: scale(1.1);
+    }
+    .toggle-item label {
+      cursor: pointer;
+      flex: 1;
+    }
+    .toggle-color {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      margin-right: 7px;
+      border: 1px solid rgba(0,0,0,0.2);
+      vertical-align: 0;
+    }
+    .footer-note {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 10px 20px 24px 20px;
+      color: #555;
+      font-size: 14px;
+    }
+    .leaflet-popup-content {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+    .route-marker {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.95);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 24px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.28);
+    }
+    .popup-title-link {
+      color: #1f1f1f;
+      text-decoration: underline;
+    }
+    .popup-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 270px;
+      max-width: 100%;
+      margin-top: 8px;
+    }
+    .popup-gallery.two {
+      grid-template-columns: repeat(2, 1fr);
+      width: 220px;
+    }
+    .popup-gallery.one {
+      grid-template-columns: 1fr;
+      width: 180px;
+    }
+    .popup-gallery img {
+      width: 100%;
+      height: 82px;
+      object-fit: cover;
+      display: block;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+    .city-label {
+      background: rgba(255,255,255,0.90);
+      border: 1px solid rgba(80,80,80,0.18);
+      border-radius: 10px;
+      padding: 3px 8px;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      color: #2a2a2a;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      white-space: nowrap;
+    }
+    @media (max-width: 1100px) {
+      .toggle-panel {
+        width: 240px;
+      }
+      .city-label {
+        font-size: 13px;
+      }
+    }
+    @media (max-width: 900px) {
+      #map { height: 620px; }
+      .route-line { font-size: 15px; }
+      h1 { font-size: 24px; }
+      .toggle-panel {
+        position: static;
+        width: auto;
+        max-height: none;
+        margin: 12px 0 0 0;
+      }
+      #map-wrap {
+        padding: 0 20px;
+      }
+      .city-label {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Albert Gabriel’s Travels in Turkey and Upper Mesopotamia, 1927–1932</h1>
+    <p class="subtitle">All routes are shown on a single interactive map. Click the numbered stops for route details, or use the panel to show and hide individual journeys.</p>
+
+    <div class="legend-block">
+      <div class="route-line"><span class="swatch" style="background:#C05030;"></span><strong>1927 Oct/Nov.:</strong> Kütahya → Afyon → Akşehir → Konya → Karaman → Niğde → Nevşehir → Aksaray → Kayseri → Ankara</div>
+      <div class="route-line"><span class="swatch" style="background:#1D6FA4;"></span><strong>1928 April/May:</strong> Kayseri → Sivas → Tokat → Niksar → Amasya</div>
+      <div class="route-line"><span class="swatch" style="background:#2A8A5C;"></span><strong>1928 Oct./Nov.:</strong> Niğde → Adana → Tarsus → Mut → Karaman → Konya</div>
+      <div class="route-line"><span class="swatch" style="background:#7A4BAA;"></span><strong>1929 Oct./Nov.:</strong> Kayseri → Sivas</div>
+      <div class="route-line"><span class="swatch" style="background:#C08020;"></span><strong>1930 Oct./Nov.:</strong> Amasya → Tokat → Sivas-Divriği</div>
+      <div class="route-line"><span class="swatch" style="background:#B33A3A;"></span><strong>1932 April/May.:</strong> Mardin → Dunaysir → Hasankeyf → Nusaybin → Harran → Urfa → Aleppo</div>
+      <div class="route-line"><span class="swatch" style="background:#1F8A8A;"></span><strong>1932 Oct./Nov.:</strong> Mardin → Diyarbakır → Bitlis → Silvan → Elazığ → Malatya → Hasankeyf → Dunaysir → Nusaybin → Aleppo</div>
+    </div>
+  </div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div class="toggle-panel">
+      <div class="toggle-title">Show / hide routes</div>
+      <div id="toggle-list"></div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Base map © OpenStreetMap contributors. Approximate historical place matching has been used where modern place names differ, such as Dunaysir/Kızıltepe and Aleppo/Aleppo.
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const map = L.map('map', { zoomControl: true }).setView([38.3, 36.9], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const places = {
+      "Kütahya": [39.4192, 29.9857],
+      "Afyon": [38.7569, 30.5387],
+      "Akşehir": [38.3575, 31.4164],
+      "Konya": [37.8746, 32.4932],
+      "Karaman": [37.1811, 33.2222],
+      "Niğde": [37.9698, 34.6766],
+      "Nevşehir": [38.6247, 34.7142],
+      "Aksaray": [38.3687, 34.0370],
+      "Kayseri": [38.7225, 35.4875],
+      "Ankara": [39.9334, 32.8597],
+      "Sivas": [39.7477, 37.0179],
+      "Tokat": [40.3167, 36.5500],
+      "Niksar": [40.5917, 36.9539],
+      "Amasya": [40.6539, 35.8330],
+      "Adana": [37.0000, 35.3213],
+      "Tarsus": [36.9177, 34.8928],
+      "Mut": [36.6430, 33.4382],
+      "Divriği": [39.3710, 38.1137],
+      "Mardin": [37.3212, 40.7245],
+      "Dunaysir": [37.1939, 40.5875],
+      "Hasankeyf": [37.7061, 41.4147],
+      "Nusaybin": [37.0703, 41.2178],
+      "Harran": [36.8649, 39.0310],
+      "Urfa": [37.1674, 38.7955],
+      "Aleppo": [36.2021, 37.1343],
+      "Diyarbakır": [37.9144, 40.2306],
+      "Bitlis": [38.4006, 42.1095],
+      "Silvan": [38.1371, 41.0082],
+      "Elazığ": [38.6810, 39.2264],
+      "Malatya": [38.3552, 38.3095]
+    };
+
+    const routes = [
+      { id: "r1927", name: "1927 Oct/Nov.", color: "#C05030", cities: ["Kütahya","Afyon","Akşehir","Konya","Karaman","Niğde","Nevşehir","Aksaray","Kayseri","Ankara"] },
+      { id: "r1928a", name: "1928 April/May", color: "#1D6FA4", cities: ["Kayseri","Sivas","Tokat","Niksar","Amasya"] },
+      { id: "r1928b", name: "1928 Oct./Nov.", color: "#2A8A5C", cities: ["Niğde","Adana","Tarsus","Mut","Karaman","Konya"] },
+      { id: "r1929", name: "1929 Oct./Nov.", color: "#7A4BAA", cities: ["Kayseri","Sivas"] },
+      { id: "r1930", name: "1930 Oct./Nov.", color: "#C08020", cities: ["Amasya","Tokat","Divriği"] },
+      { id: "r1932a", name: "1932 April/May.", color: "#B33A3A", cities: ["Mardin","Dunaysir","Hasankeyf","Nusaybin","Harran","Urfa","Aleppo"] },
+      { id: "r1932b", name: "1932 Oct./Nov.", color: "#1F8A8A", cities: ["Mardin","Diyarbakır","Bitlis","Silvan","Elazığ","Malatya","Hasankeyf","Dunaysir","Nusaybin","Aleppo"] }
+    ];
+
+    const routeLayers = {};
+    const allBounds = [];
+    const photoData = {
+  "Adana": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=adana&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/adana-ulu-cami-minaresi-3/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003626-e1714564332185.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/adana-kemeralti-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003173-e1711466946614.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/adana-ulu-cami-ic-avlusu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002204.jpg"
+      }
+    ]
+  },
+  "Afyon": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=afyonkarahisar&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/afyonkarahisar-sokak-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k006195.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/afyonkarahisar-genel-gorunumu-3/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004853-e1712141029345.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/afyonkarahisar-kalesi-5/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004857.jpg"
+      }
+    ]
+  },
+  "Akşehir": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=aksehir&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/aksehir-tas-medrese/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002434-e1711624798921.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/seyyid-mahmud-hayrani-turbesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004099-e1732907278315.jpg"
+      }
+    ]
+  },
+  "Aksaray": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=aksaray&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/oresin-tepesi-delik-han/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002135.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/aksaray-alay-hani-tac-kapisi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003268.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/oresin-han-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003170.jpg"
+      }
+    ]
+  },
+  "Amasya": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Amasya&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/pir-mehmet-celebi-camii-ve-amasya-genel-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003357-e1711920858798.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/alcak-kopru-ve-yaliboyu-evleri/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003340-e1711918710297.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/amasyada-bir-sokak/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003345-e1711918826245.jpg"
+      }
+    ]
+  },
+  "Ankara": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Ankara&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/eski-disisleri-bakanligi-binasi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k005993.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/ankara-eski-sayistay-binasi-ve-arkada-i-tbmm-binasi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002391-e1715360740683.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/hisar-kapisi-ankara-kalesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002120.jpg"
+      }
+    ]
+  },
+  "Bitlis": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Bitlis&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/meydan-camii-ve-bitlis-kalesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003540.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/bitlis-serefiye-camii-giris-kapisi-ve-arkada-meydan-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004281-e1732906912939.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/papsin-hani/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004290-e1714403265294.jpg"
+      }
+    ]
+  },
+  "Diyarbakır": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=diyarbakir&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/ulu-beden-burcundan-diyarbakira-bakis/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004100.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/hazreti-suleyman-camii-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003410.jpg"
+      }
+    ]
+  },
+  "Divriği": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=divrigi&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/divrigi-ulu-cami-kuzeyden-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004299-e1711384075945.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/divrigi-ulu-cami-genel-gorunumu-ve-detaylar/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002930-e1711371663927.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/divrigi-kalesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004329.jpg"
+      }
+    ]
+  },
+  "Dunaysir": {
+    "title": "https://fotoatlas.net/bolge/turkiye/mardin/kiziltepe/",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/kiziltepe-ulu-cami-6/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002924.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kiziltepe-ulu-cami-minaresi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003562.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kiziltepe-ulu-cami-icinden-kubbe-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002404.jpg"
+      }
+    ]
+  },
+  "Elazığ": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=elazig&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/harput-evleri/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004421-e1712265083946.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/harput-evleri-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004426-e1712265158993.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/harput-kalesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004480-e1712263673423.jpg"
+      }
+    ]
+  },
+  "Harran": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=harran&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/harran-kalesi-8/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003439-e1712339832278.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/harran-antik-kenti/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k005292.jpg"
+      }
+    ]
+  },
+  "Hasankeyf": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=hasankeyf&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/hasankeyf-dicle-koprusu-ve-er-rizk-camii-minaresi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003983-e1713514081724.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/hasankeyf-koc-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004690.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/zeynel-bey-turbesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004742-e1713514846937.jpg"
+      }
+    ]
+  },
+  "Karaman": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=karaman&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/karaman-kalesi-4/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002116.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/siyahser-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004348-e1711388866925.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/siyahser-camii-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003057-e1711715246487.jpg"
+      }
+    ]
+  },
+  "Kayseri": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Kayseri&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/chateau-vue-interieure-au-sommet-des-remparts/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002959-e1732785432289.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kayseri-kalesi-yogun-burca-bakis/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003047.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kayseri-kale-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003037-e1712091920120.jpg"
+      }
+    ]
+  },
+  "Konya": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Konya&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/ince-minare/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k001144.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/1928-yili-konya-cumhuriyet-bayrami-kutlamalari-4/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002033.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/alaaddin-kosku-ve-karatay-medresesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k001146.jpg"
+      }
+    ]
+  },
+  "Kütahya": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=kutahya&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/kutahya-ulu-cami-ve-genel-gorunum/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002138-e1711396483595.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kutahyada-bir-sokak-ve-cesme/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002137-e1712174688730.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kutahya-evleri-ve-dere-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002139-e1712174847208.jpg"
+      }
+    ]
+  },
+  "Malatya": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Malatya&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/battalgazi-ulu-cami-genel-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004423-e1734203884133.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/silahtar-mustafa-aga-kervansarayi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004692.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/battalgazi-ulu-cami-3/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004258-e1711744228123.jpg"
+      }
+    ]
+  },
+  "Mardin": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Mardin&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/sehidiye-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003531.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/zinciriye-medresesi-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003084.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/zinciriye-medresesi-11/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003818.jpg"
+      }
+    ]
+  },
+  "Mut": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=mut&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/mut-tas-medrese-ve-arkada-mut-kalesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003270.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/laal-pasa-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002196-e1712050857725.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/alahan-manastiri-dogu-kilisesi-nefinden-gorunum/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002048-e1733478674115.jpg"
+      }
+    ]
+  },
+  "Nevşehir": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=nevsehir&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/nevsehir-kursunlu-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002973-e1711624232304.jpg"
+      }
+    ]
+  },
+  "Niğde": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=nigde&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/bor-eski-hamam/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002113-e1711448352753.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/nigde-sungur-bey-camii-ve-sungur-bey-kumbeti/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003194-e1711627021233.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/sungur-bey-camii-minaresinden-ulu-cami-ve-cevresi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002110-e1711627330479.jpg"
+      }
+    ]
+  },
+  "Niksar": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Niksar&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/niksar-kalesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002044-e1711623478173.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/niksar-eski-sehrin-ana-caddesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003321.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kirkkizlar-kumbeti/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002041-e1711966931565.jpg"
+      }
+    ]
+  },
+  "Silvan": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Silvan&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/silvan-ulu-cami-guney-cephesi-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k005902-e1713271510408.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/malabadi-koprusu-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003472-e1711531533305.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/diyarbakir-silvan-kalesi-kalintisi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004063.jpg"
+      }
+    ]
+  },
+  "Sivas": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=sivas&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/sifaiye-medresesi-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003219.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/gok-medrese-cesmesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003255.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/sivas-gok-medrese-2/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003307-e1711372901493.jpg"
+      }
+    ]
+  },
+  "Tarsus": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Tarsus&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/kleopatra-kapisi-3/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002395.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/tarsus-eski-cami/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002414-e1712051072597.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/tarsus-ulu-cami/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002420-e1712226727339.jpg"
+      }
+    ]
+  },
+  "Tokat": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=Tokat&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/ali-pasa-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003317.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/tokat-kalesi-ve-tokat-tashan/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k003264-e1712001828470.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/tokat-rustem-celebi-camii-ve-minaresi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k002435-e1728931211153.jpg"
+      }
+    ]
+  },
+  "Urfa": {
+    "title": "https://fotoatlas.net/arastir/?_bolge=sanliurfa&_olusturan=albert-gabriel",
+    "images": [
+      {
+        "page": "https://fotoatlas.net/image/rizvaniye-medresesi/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004275-e1711395637116.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/kaleden-sanliurfa-gorunumu/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004075-e1711537976919.jpg"
+      },
+      {
+        "page": "https://fotoatlas.net/image/sanliurfa-kalesi-ve-rizvaniye-camii/",
+        "file": "https://cdn.fotoatlas.net/wp-content/uploads/2024/03/20k004387-e1711389613951.jpg"
+      }
+    ]
+  }
+};
+
+    function markerIcon(color, n) {
+      return L.divIcon({
+        className: '',
+        html: `<div class="route-marker" style="background:${color};">${n}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -10]
+      });
+    }
+
+
+    function buildPopupHtml(city, routeName, stopNumber, totalStops) {
+      const entry = photoData[city];
+      let titleHtml = `<strong>${city}</strong>`;
+      const bodyHtml = `${routeName}<br>Stop ${stopNumber} of ${totalStops}`;
+
+      if (entry && entry.title) {
+        titleHtml = `<strong><a class="popup-title-link" href="${entry.title}" target="_blank" rel="noopener noreferrer">${city}</a></strong>`;
+      }
+
+      if (!entry || !entry.images || entry.images.length === 0) {
+        return `${titleHtml}<br>${bodyHtml}`;
+      }
+
+      const images = entry.images.filter(img => img && img.page && img.file);
+      if (images.length === 0) {
+        return `${titleHtml}<br>${bodyHtml}`;
+      }
+
+      const shuffled = [...images].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(3, shuffled.length));
+      const galleryClass = selected.length === 1 ? 'popup-gallery one' : (selected.length === 2 ? 'popup-gallery two' : 'popup-gallery');
+
+      const gallery = selected.map(img => `
+        <a href="${img.page}" target="_blank" rel="noopener noreferrer">
+          <img src="${img.file}" alt="${city}">
+        </a>
+      `).join('');
+
+      return `${titleHtml}<br>${bodyHtml}<div class="${galleryClass}">${gallery}</div>`;
+    }
+
+    routes.forEach(route => {
+      const group = L.layerGroup();
+      const latlngs = route.cities.map(city => {
+        const ll = places[city];
+        allBounds.push(ll);
+        return ll;
+      });
+
+      L.polyline(latlngs, {
+        color: route.color,
+        weight: 5,
+        opacity: 0.88,
+        smoothFactor: 1
+      }).addTo(group);
+
+      route.cities.forEach((city, idx) => {
+        const ll = places[city];
+        L.marker(ll, { icon: markerIcon(route.color, idx + 1) })
+          .bindPopup(buildPopupHtml(city, route.name, idx + 1, route.cities.length), { maxWidth: 320 })
+          .addTo(group);
+      });
+
+      group.addTo(map);
+      routeLayers[route.id] = group;
+    });
+
+    function buildTogglePanel() {
+      const container = document.getElementById('toggle-list');
+
+  
+    function buildPopupHtml(city, routeName, stopNumber, totalStops) {
+      const entry = photoData[city];
+      let titleHtml = `<strong>${city}</strong>`;
+      const bodyHtml = `${routeName}<br>Stop ${stopNumber} of ${totalStops}`;
+
+      if (entry && entry.title) {
+        titleHtml = `<strong><a class="popup-title-link" href="${entry.title}" target="_blank" rel="noopener noreferrer">${city}</a></strong>`;
+      }
+
+      if (!entry || !entry.images || entry.images.length === 0) {
+        return `${titleHtml}<br>${bodyHtml}`;
+      }
+
+      const images = entry.images.filter(img => img && img.page && img.file);
+      if (images.length === 0) {
+        return `${titleHtml}<br>${bodyHtml}`;
+      }
+
+      const shuffled = [...images].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(3, shuffled.length));
+      const galleryClass = selected.length === 1 ? 'popup-gallery one' : (selected.length === 2 ? 'popup-gallery two' : 'popup-gallery');
+
+      const gallery = selected.map(img => `
+        <a href="${img.page}" target="_blank" rel="noopener noreferrer">
+          <img src="${img.file}" alt="${city}">
+        </a>
+      `).join('');
+
+      return `${titleHtml}<br>${bodyHtml}<div class="${galleryClass}">${gallery}</div>`;
+    }
+
+    routes.forEach(route => {
+        const item = document.createElement('div');
+        item.className = 'toggle-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.id = route.id;
+
+        const label = document.createElement('label');
+        label.setAttribute('for', route.id);
+        label.innerHTML = `<span class="toggle-color" style="background:${route.color};"></span><strong>${route.name}</strong>`;
+
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            routeLayers[route.id].addTo(map);
+          } else {
+            map.removeLayer(routeLayers[route.id]);
+          }
+        });
+
+        item.appendChild(checkbox);
+        item.appendChild(label);
+        container.appendChild(item);
+      });
+    }
+
+    buildTogglePanel();
+    map.fitBounds(allBounds, { padding: [40, 40] });
+  </script>
+</body>
+</html>
